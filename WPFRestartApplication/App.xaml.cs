@@ -1,0 +1,261 @@
+﻿//-----------------------------------------------------------------------
+// <copyright file="App.cs" company="Lifeprojects.de">
+//     Class: App
+//     Copyright © Lifeprojects.de 2026
+// </copyright>
+//
+// <author>Gerhard Ahrens - Lifeprojects.de</author>
+// <email>gerhard.ahrens@lifeprojects.de</email>
+// <date>05.03.2026 18:21:36</date>
+//
+// <summary>
+// Startklasse App.cs
+// </summary>
+//-----------------------------------------------------------------------
+
+namespace WPFRestartApplication
+{
+    using System.Collections;
+    using System.Diagnostics;
+    using System.Globalization;
+    using System.IO;
+    using System.Text;
+    using System.Windows;
+    using System.Windows.Markup;
+    using System.Windows.Threading;
+
+    using WPFRestartApplication.Beispiele;
+
+    /// <summary>
+    /// Interaction logic for App.xaml
+    /// </summary>
+    public partial class App : Application
+    {
+        private const string DEFAULTLANGUAGE = "de-DE";
+        public const string SHORTNAME = "WPFRestartApplication";
+        private static readonly string MessageBoxTitle = "WPFRestartApplication Application";
+        private static readonly string UnexpectedError = "An unexpected error occured.";
+        private string exePath = string.Empty;
+        private string exeName = string.Empty;
+
+        /// <summary>
+        /// Initialisiert eine neue Instanz der App-Klasse und richtet globale Anwendungsressourcen sowie
+        /// Fehlerbehandlung ein.
+        /// </summary>
+        /// <remarks>Der Konstruktor legt den Namen und Pfad der ausführbaren Datei fest, konfiguriert die
+        /// Synchronisierung von Texteingaben für Windows-Kompatibilität und registriert einen globalen Handler für
+        /// nicht abgefangene Ausnahmen auf Dispatcher-Ebene. Dies stellt sicher, dass unerwartete Fehler zentral
+        /// behandelt und angezeigt werden.</remarks>
+        public App()
+        {
+            try
+            {
+                /* Name der EXE Datei*/
+                exeName = Path.GetFileNameWithoutExtension(AppDomain.CurrentDomain.FriendlyName);
+                /* Pfad der EXE-Datei*/
+                exePath = Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory);
+
+                /* Synchronisieren einer Textenigabe mit dem primären Windows (wegen Validierung von Eingaben)*/
+                FrameworkCompatibilityPreferences.KeepTextBoxDisplaySynchronizedWithTextProperty = false;
+
+                /* Alle nicht explicit abgefangene Exception spätesten hier abfangen und anzeigen */
+                this.DispatcherUnhandledException += this.OnDispatcherUnhandledException;
+            }
+            catch (Exception ex)
+            {
+                ex.Data.Add("UserDomainName", Environment.UserDomainName);
+                ex.Data.Add("UserName", Environment.UserName);
+                ex.Data.Add("exePath", exePath);
+                ErrorMessage(ex, "General Error: ");
+                ApplicationExit();
+            }
+        }
+
+        public static string RunningEnvironment { get; set; } = "Entwicklung";
+
+        public static bool IsRestart { get; set; }
+
+        /// <summary>
+        /// Verwaltet die Startlogik der Anwendung, einschließlich der Initialisierung der Ländereinstellungen und der Konfiguration der Benutzereinstellungen.
+        /// </summary>
+        /// <remarks>
+        /// In Debug-Builds werden zusätzliche Trace-Listener für die Datenbindung, weitergeleitete Ereignisse und Ressourcenverzeichnisse 
+        /// konfiguriert, um die Fehlersuche zu erleichtern.Ausnahmen während des Startvorgangs werden abgefangen und behandelt,
+        /// um eine korrekte Fehlermeldung und das ordnungsgemäße Herunterfahren der Anwendung sicherzustellen.
+        /// </remarks>
+        /// <param name="e">Ein Objekt, das die Ereignisdaten für das Startereignis enthält.</param>
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e);
+
+            if (e.Args != null && e.Args.Length > 0)
+            {
+                if (e.Args[0].Contains("--restarted"))
+                {
+                    RunningEnvironment = "Neustart mit Argument: " + e.Args.FirstOrDefault(arg => arg.StartsWith("--restarted#", StringComparison.CurrentCultureIgnoreCase))?.Split('#').LastOrDefault();
+                }
+            }
+
+            try
+            {
+#if DEBUG
+                PresentationTraceSources.DataBindingSource.Listeners.Add(new ConsoleTraceListener());
+                PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Critical;
+                //PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Critical | SourceLevels.Error | SourceLevels.Warning;
+                //PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.All;
+                PresentationTraceSources.RoutedEventSource.Listeners.Add(new ConsoleTraceListener());
+                PresentationTraceSources.RoutedEventSource.Switch.Level = SourceLevels.All;
+                PresentationTraceSources.ResourceDictionarySource.Listeners.Add(new ConsoleTraceListener());
+                PresentationTraceSources.ResourceDictionarySource.Switch.Level = SourceLevels.All;
+#endif
+
+                /* Initalisierung Spracheinstellung */
+                InitializeCultures(DEFAULTLANGUAGE);
+            }
+            catch (Exception ex)
+            {
+                string errorText = ex.Message;
+                ErrorMessage(ex, "General Error: ");
+                ApplicationExit();
+            }
+        }
+
+        /// <summary>
+        /// Beispiel für das Speichern von Einstellungen beim Beenden der Anwendung, hier wird nur die letzte Zugriffzeit aktualisiert
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnExit(ExitEventArgs e)
+        {
+            base.OnExit(e);
+        }
+
+        /// <summary>
+        /// Initialisiert die Kultur des aktuellen Threads und die UI-Kultur auf der Grundlage des angegebenen Sprachcodes.
+        /// </summary>
+        /// <remarks>
+        /// Diese Methode aktualisiert zudem die Standardsprache für WPF-Elemente, indem sie die Metadaten der „Language“-Eigenschaft 
+        /// für „FrameworkElement“ überschreibt. Dadurch wird sichergestellt, dass die Ressourcensuche und die Formatierung
+        /// in der gesamten Benutzeroberfläche der Anwendung mit der angegebenen Kultur übereinstimmen.
+        /// </remarks>
+        /// <param name="language">Eine Zeichenfolge, die das IETF-Sprachkennzeichen (z. B. „en-US“) enthält, das als aktuelle 
+        /// Kultur und UI-Kultur festgelegt werden soll. Ist der Wert null oder leer, wird die Standardsprache verwendet.
+        /// </param>
+        private static void InitializeCultures(string language)
+        {
+            if (string.IsNullOrEmpty(language) == false)
+            {
+                Thread.CurrentThread.CurrentCulture = new CultureInfo(language);
+            }
+            else
+            {
+                Thread.CurrentThread.CurrentCulture = new CultureInfo(DEFAULTLANGUAGE);
+            }
+
+            if (string.IsNullOrEmpty(language) == false)
+            {
+                Thread.CurrentThread.CurrentUICulture = new CultureInfo(language);
+            }
+            else
+            {
+                Thread.CurrentThread.CurrentUICulture = new CultureInfo(DEFAULTLANGUAGE);
+            }
+
+            FrameworkPropertyMetadata frameworkMetadata = new FrameworkPropertyMetadata(XmlLanguage.GetLanguage(new CultureInfo(language).IetfLanguageTag));
+            FrameworkElement.LanguageProperty.OverrideMetadata(typeof(FrameworkElement), frameworkMetadata);
+        }
+
+        /// <summary>
+        /// Darstellen einer Fehlermeldung mit eventueller Exception, die Applikationsweit verwendet werden kann, um Fehler an den Benutzer anzuzeigen, z.B. bei einem unerwarteten Fehler, etc.
+        /// </summary>
+        /// <param name="ex">Die Exception, die angezeigt werden soll.</param>
+        /// <param name="message">Eine optionale Nachricht, die zusammen mit der Exception angezeigt wird.</param>
+        public static void ErrorMessage(Exception ex, string message = "")
+        {
+            string expMsg = ex.Message;
+            var aex = ex as AggregateException;
+
+            if (aex != null && aex.InnerExceptions.Count == 1)
+            {
+                expMsg = aex.InnerExceptions[0].Message;
+            }
+
+            if (string.IsNullOrEmpty(message) == true)
+            {
+                message = UnexpectedError;
+            }
+
+            StringBuilder errorText = new StringBuilder();
+            if (ex.Data != null && ex.Data.Count > 0)
+            {
+                foreach (DictionaryEntry item in ex.Data)
+                {
+                    errorText.AppendLine(CultureInfo.CurrentCulture, $"{item.Key} : {item.Value}");
+                }
+            }
+
+            MessageBox.Show(
+                message + $"{expMsg}\n{ex.Message}\n{errorText.ToString()}",
+                MessageBoxTitle,
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+
+        /// <summary>
+        /// Info Message Box. die Applikationsweit verwendet werden kann, 
+        /// um Informationen an den Benutzer anzuzeigen, z.B. nach einem erfolgreichen Speichern oder einer erfolgreichen Aktion, etc.
+        /// </summary>
+        /// <param name="message"></param>
+        public static void InfoMessage(string message)
+        {
+            MessageBox.Show(
+                message,
+                MessageBoxTitle,
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+
+        /// <summary>
+        /// Screen zum aktualisieren zwingen, Globale Funktion
+        /// </summary>
+        public static void DoEvents()
+        {
+            Application.Current.Dispatcher.Invoke(DispatcherPriority.Background, new Action(delegate { }));
+        }
+
+        /// <summary>
+        /// Behandelt das Ereignis „DispatcherUnhandledException“, das auftritt, wenn im UI-Thread der Anwendung eine nicht abgefangene Ausnahme ausgelöst wird.
+        /// </summary>
+        /// <param name="sender">Die Quelle des Ereignisses, in der Regel der Anwendungs-Dispatcher.</param>
+        /// <param name="e">Ein `DispatcherUnhandledExceptionEventArgs`-Objekt, das die Ereignisdaten enthält, einschließlich der nicht behandelten Ausnahme.</param>
+        private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+        {
+            Debug.WriteLine($"{exeName}-{(e.Exception as Exception).Message}");
+        }
+
+        /// <summary>
+        /// Programmende erzwingen
+        /// </summary>
+        public static void ApplicationExit()
+        {
+            Application.Current.ShutdownMode = ShutdownMode.OnMainWindowClose;
+            Application.Current.Shutdown(0);
+        }
+
+        public static async Task RestartAsync(string args = "Test")
+        {
+            string exePath = Environment.ProcessPath;
+
+            IsRestart = true;
+
+            await Task.Delay(300);
+
+            Process.Start(new ProcessStartInfo(exePath)
+            {
+                Arguments = $"--restarted#{args}",
+                UseShellExecute = true
+            });
+
+            Application.Current.Shutdown();
+        }
+    }
+}

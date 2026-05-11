@@ -1,0 +1,69 @@
+﻿<UserControl
+    x:Class="WPFRestartApplication.Beispiele.SettingsUC"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:WPFRestartApplication.Beispiele"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    x:Name="SettingsControl"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    mc:Ignorable="d">
+    <Grid>
+        <!--  Inhalte zum UserControl  -->
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="auto" />
+        </Grid.ColumnDefinitions>
+        <Border Background="#FAFAFB" CornerRadius="5">
+            <Grid
+                Margin="10"
+                ColumnDefinitions="130,160, *"
+                RowDefinitions="40,35,25,25">
+                <Border
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    Grid.ColumnSpan="2"
+                    Margin="0,0,0,10"
+                    BorderBrush="DarkGray"
+                    BorderThickness="0,0,0,2">
+                    <TextBlock
+                        HorizontalAlignment="Left"
+                        FontSize="16"
+                        FontWeight="Bold">
+                        <Run Text="Einstellungen zu" />
+                        <Run Text="{Binding Path=WindowTitel, FallbackValue=~WindowTitel}" />
+                    </TextBlock>
+                </Border>
+
+                <TextBlock
+                    Grid.Row="1"
+                    Grid.Column="0"
+                    VerticalAlignment="Center"
+                    Text="Umgebung auswählen" />
+
+                <ComboBox
+                    x:Name="CbEnvironment"
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    Width="150"
+                    Margin="5,0,0,0"
+                    VerticalAlignment="Center" />
+
+                <Button
+                    Grid.Row="1"
+                    Grid.Column="2"
+                    Width="25"
+                    Height="25"
+                    Margin="5,0,0,0"
+                    HorizontalAlignment="Left"
+                    Command="{Binding Path=RestartCommand}"
+                    ToolTip="Anwendung neu starten">
+                    <Image Source="{StaticResource ResourceKey=IconApplicationRestart}" Stretch="None" />
+                </Button>
+
+
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

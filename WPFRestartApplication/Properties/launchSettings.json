@@ -1,0 +1,7 @@
+{
+  "profiles": {
+    "WPFRestartApplication": {
+      "commandName": "Project"
+    }
+  }
+}
