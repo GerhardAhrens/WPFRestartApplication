@@ -9,7 +9,7 @@
 // <date>05.03.2026 18:21:36</date>
 //
 // <summary>
-// WPF Template mit Minimalfunktionen
+// Erweiterungsmethoden, die die Anzeige von Nachrichten erleichtern und vereinfachen sollen
 // </summary>
 //-----------------------------------------------------------------------
 

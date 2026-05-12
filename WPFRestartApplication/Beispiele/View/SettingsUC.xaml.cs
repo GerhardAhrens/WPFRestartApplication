@@ -23,16 +23,18 @@
             EnvironmentSource.Add(2, "Test");
             EnvironmentSource.Add(3, "Entwicklung");
 
+            int index = EnvironmentSource.FirstOrDefault(x => x.Value == App.Settings.Umgebung).Key;
+
             WeakEventManager<ComboBox, SelectionChangedEventArgs>.AddHandler(this.CbEnvironment, "SelectionChanged", this.OnEnvironmentSelectionChanged);
-            this.CbEnvironment.SelectedIndex = 2; // Default Wert
             this.CbEnvironment.SelectedValuePath = "Key";
             this.CbEnvironment.DisplayMemberPath = "Value";
             this.CbEnvironment.ItemsSource = EnvironmentSource;
+            this.CbEnvironment.SelectedIndex = index;
         }
 
         private void OnEnvironmentSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            MainWindow.SelectedEnvironment = (string)((KeyValuePair<int, string>)this.CbEnvironment.SelectedItem).Value;
+            App.Settings.Umgebung = (string)((KeyValuePair<int, string>)this.CbEnvironment.SelectedItem).Value;
         }
         #endregion WindowEventHandler
     }

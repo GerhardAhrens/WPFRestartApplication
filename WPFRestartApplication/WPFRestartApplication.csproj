@@ -22,14 +22,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="_Doc\MainWindow.png" />
-    <None Remove="_Doc\Settings.png" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Include="Resources\Picture\ApplicationIcon.ico" />
-    <Content Include="_Doc\MainWindow.png" />
-    <Content Include="_Doc\Settings.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -38,6 +31,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Beispiele\Settings\" />
     <Folder Include="Resources\Style\" />
     <Folder Include="Resources\Localization\" />
   </ItemGroup>

@@ -71,8 +71,6 @@ namespace WPFRestartApplication
             }
         }
 
-        public static string RunningEnvironment { get; set; } = "Entwicklung";
-
         public static bool IsRestart { get; set; }
 
         /// <summary>
@@ -87,14 +85,6 @@ namespace WPFRestartApplication
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
-
-            if (e.Args != null && e.Args.Length > 0)
-            {
-                if (e.Args[0].Contains("--restarted"))
-                {
-                    RunningEnvironment = "Neustart mit Argument: " + e.Args.FirstOrDefault(arg => arg.StartsWith("--restarted#", StringComparison.CurrentCultureIgnoreCase))?.Split('#').LastOrDefault();
-                }
-            }
 
             try
             {
@@ -111,6 +101,19 @@ namespace WPFRestartApplication
 
                 /* Initalisierung Spracheinstellung */
                 InitializeCultures(DEFAULTLANGUAGE);
+
+                /* Initiale Benutzer Einstellungen speichern */
+                InitializeSettings();
+
+                //MessageBox.Show($"Application started with arguments: {string.Join(", ", e.Args)}", MessageBoxTitle, MessageBoxButton.OK, MessageBoxImage.Information);
+
+                if (e.Args != null && e.Args.Length > 0)
+                {
+                    if (e.Args[0].Contains("--restarted#"))
+                    {
+                        Settings.Umgebung = "Neustart mit Argument: " + e.Args.FirstOrDefault(arg => arg.StartsWith("--restarted#", StringComparison.CurrentCultureIgnoreCase))?.Split('#').LastOrDefault();
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -121,12 +124,30 @@ namespace WPFRestartApplication
         }
 
         /// <summary>
+        /// Statische Eigenschaft für die globalen Einstellungen der Anwendung, hier können alle Einstellungen gespeichert werden, 
+        /// die in der gesamten Anwendung benötigt werden, z.B. Spracheinstellung, Benutzername, etc.
+        /// </summary>
+        public static ApplicationSettings Settings { get; set; }
+
+        /// <summary>
         /// Beispiel für das Speichern von Einstellungen beim Beenden der Anwendung, hier wird nur die letzte Zugriffzeit aktualisiert
         /// </summary>
         /// <param name="e"></param>
         protected override void OnExit(ExitEventArgs e)
         {
             base.OnExit(e);
+
+            Settings.LetzterZugriff = DateTime.Now;
+
+            using (ApplicationSettings settings = new ApplicationSettings())
+            {
+                if (settings.IsExitSettings() == true)
+                {
+                    settings.Load();
+                    settings.SetSetting(Settings);
+                    settings.Save();
+                }
+            }
         }
 
         /// <summary>
@@ -163,6 +184,31 @@ namespace WPFRestartApplication
             FrameworkPropertyMetadata frameworkMetadata = new FrameworkPropertyMetadata(XmlLanguage.GetLanguage(new CultureInfo(language).IetfLanguageTag));
             FrameworkElement.LanguageProperty.OverrideMetadata(typeof(FrameworkElement), frameworkMetadata);
         }
+
+        /// <summary>
+        /// Erstellen von Standardeinstellungen, hier wird nur der Benutzername und die letzte Zugriffzeit gespeichert, weitere Einstellungen können natürlich hinzugefügt werden
+        /// </summary>
+        private static void InitializeSettings()
+        {
+            using (ApplicationSettings settings = new ApplicationSettings())
+            {
+                if (settings.IsExitSettings() == false)
+                {
+                    settings.Username = $"{Environment.UserDomainName}\\{Environment.UserName}";
+                    settings.LetzterZugriff = DateTime.Now;
+                    settings.FrageExit = true;
+                    settings.Umgebung = "Entwicklung";
+                    settings.Save();
+                }
+                else
+                {
+                    settings.Load();
+                }
+
+                Settings = settings;
+            }
+        }
+
 
         /// <summary>
         /// Darstellen einer Fehlermeldung mit eventueller Exception, die Applikationsweit verwendet werden kann, um Fehler an den Benutzer anzuzeigen, z.B. bei einem unerwarteten Fehler, etc.

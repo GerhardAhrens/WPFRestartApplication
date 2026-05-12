@@ -18,8 +18,6 @@ namespace WPFRestartApplication
     using System.ComponentModel;
     using System.Windows;
 
-    using WPFRestartApplication.Beispiele;
-
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
@@ -35,10 +33,12 @@ namespace WPFRestartApplication
 
             this.QuitCommand = new CommandBase(this.OnQuit, () => true);
             this.InformationCommand = new CommandBase(this.OnInformationPopup);
+            this.CloseInformationPopupCommand = new CommandBase(this.OnCloseInformation);
             this.SettingsCommand = new CommandBase(this.OnSettingsPopup);
+            this.CloseSettingsPopupCommand = new CommandBase(this.OnCloseSettingsPopup);
             this.RestartCommand = new CommandBase(this.OnReStart);
 
-            this.WindowTitel = $"{LocalizationValue.Get("WindowsTitelZeile")} [{App.RunningEnvironment}]";
+            this.WindowTitel = $"{LocalizationValue.Get("WindowsTitelZeile")} [{App.Settings.Umgebung}]";
             this.ApplikationVersion = base.ApplicationVersion.ToString();
             this.LaufzeitVersion = base.RuntimeVersion;
             this.WinVersion = base.WindowsVersion;
@@ -47,10 +47,10 @@ namespace WPFRestartApplication
 
         public CommandBase QuitCommand { get; private set; }
         public CommandBase InformationCommand { get; private set; }
+        public CommandBase CloseInformationPopupCommand { get; private set; }
         public CommandBase SettingsCommand { get; private set; }
+        public CommandBase CloseSettingsPopupCommand { get; private set; }
         public CommandBase RestartCommand { get; private set; }
-
-        public static string SelectedEnvironment { get; set; }
 
         public string WindowTitel
         {
@@ -96,20 +96,6 @@ namespace WPFRestartApplication
             this.Close();
         }
 
-        private void OnStart()
-        {
-            DialogWindow dlg = new DialogWindow();
-            dlg.Owner = this;
-            bool? dlgResult = dlg.ShowDialog();
-        }
-
-        private void OnQuit(string param)
-        {
-            /* this.QuitParamCommand.TryExecute(); */
-            this.Tag = param;
-            this.Close();
-        }
-
         private void OnInformationPopup()
         {
             this.InformationPopup.SetValue(MaskLayerBehavior.IsOpenProperty, true);
@@ -139,13 +125,11 @@ namespace WPFRestartApplication
                 return;
             }
 
-            /*
             if (App.Settings.FrageExit == false)
             {
                 App.ApplicationExit();
                 return;
             }
-            */
 
             MessageBoxResult msgYN;
             if (this.Tag != null)
@@ -169,7 +153,7 @@ namespace WPFRestartApplication
 
         private async void OnReStart()
         {
-            await App.RestartAsync(MainWindow.SelectedEnvironment);
+            await App.RestartAsync(App.Settings.Umgebung);
         }
 
     }
