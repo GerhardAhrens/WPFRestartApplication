@@ -105,13 +105,13 @@ namespace WPFRestartApplication
                 /* Initiale Benutzer Einstellungen speichern */
                 InitializeSettings();
 
-                //MessageBox.Show($"Application started with arguments: {string.Join(", ", e.Args)}", MessageBoxTitle, MessageBoxButton.OK, MessageBoxImage.Information);
-
                 if (e.Args != null && e.Args.Length > 0)
                 {
                     if (e.Args[0].Contains("--restarted#"))
                     {
-                        Settings.Umgebung = "Neustart mit Argument: " + e.Args.FirstOrDefault(arg => arg.StartsWith("--restarted#", StringComparison.CurrentCultureIgnoreCase))?.Split('#').LastOrDefault();
+                        Settings.Umgebung = "Neustart mit Argument: " + e.Args
+                            .FirstOrDefault(arg => arg.StartsWith("--restarted#", StringComparison.CurrentCultureIgnoreCase))?
+                            .Split('#').LastOrDefault();
                     }
                 }
             }

@@ -58,7 +58,7 @@
                     Margin="5,0,0,0"
                     HorizontalAlignment="Left"
                     Command="{Binding Path=RestartCommand}"
-                    ToolTip="Anwendung neu starten">
+                    ToolTip="Anwendung mit der gewählten Umgebung neu starten">
                     <Image Source="{StaticResource ResourceKey=IconApplicationRestart}" Stretch="None" />
                 </Button>
 

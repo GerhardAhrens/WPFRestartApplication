@@ -131,16 +131,7 @@ namespace WPFRestartApplication
                 return;
             }
 
-            MessageBoxResult msgYN;
-            if (this.Tag != null)
-            {
-                msgYN = this.Message.AppExitMessage(this.Tag.ToString());
-            }
-            else
-            {
-                msgYN = this.Message.AppExitMessage();
-            }
-
+            MessageBoxResult msgYN = this.Message.AppExitMessage();
             if (msgYN == MessageBoxResult.Yes)
             {
                 App.ApplicationExit();
